@@ -1,0 +1,12 @@
+{
+  "name": "word-ladder",
+  "version": "1.0.0",
+  "description": "An engaging word ladder game",
+  "main": "main.py",
+  "scripts": {
+    "start": "python main.py"
+  },
+  "dependencies": {
+    "rich": "^13.7.0"
+  }
+}

@@ -1,10 +1,19 @@
+"""
+Word Ladder Game Logic Module
+
+This module contains the core game logic for the Word Ladder game, where players
+transform one word into another by changing one letter at a time.
+"""
+
 from typing import Optional, List, Tuple, Dict
 from word_graph import WordGraph
 from search import SearchAlgorithms
-import random
 
 class WordLadderGame:
+    """Manages the core game logic for Word Ladder."""
+    
     def __init__(self):
+        """Initialize a new game instance with default settings."""
         self.word_graph = WordGraph()
         self.search = None
         self.current_word = None
@@ -14,26 +23,40 @@ class WordLadderGame:
         self.difficulty = "beginner"
         self.score = 0
         self.banned_words = set()
-        self.move_limit = float('inf')
+        self.move_limit = 10  # Default move limit
         self.algorithm_stats = {}
-        self.selected_algorithm = 'A*'  # Default algorithm
+        self.selected_algorithm = 'A*'
         
     def initialize_game(self, dictionary_path: str) -> None:
-        """Initialize the game by loading the dictionary and building the graph."""
+        """
+        Set up the game by loading words and creating the word graph.
+        
+        Args:
+            dictionary_path (str): Path to the dictionary file
+        """
         self.word_graph.load_words(dictionary_path)
         self.word_graph.build_graph()
         self.search = SearchAlgorithms(self.word_graph)
         
     def set_algorithm(self, algorithm: str) -> None:
-        """Set the algorithm to use for hints and path finding."""
+        """
+        Change the search algorithm used for hints and path finding.
+        
+        Args:
+            algorithm (str): Name of the algorithm ('BFS', 'UCS', or 'A*')
+        """
         if algorithm in ['BFS', 'UCS', 'A*']:
             self.selected_algorithm = algorithm
-            # Recalculate best path with new algorithm
             if self.current_word and self.target_word:
                 self.best_path = self.calculate_best_path()
     
     def set_difficulty(self, difficulty: str) -> None:
-        """Set game difficulty level and corresponding move limits."""
+        """
+        Set the game difficulty and adjust move limits accordingly.
+        
+        Args:
+            difficulty (str): Difficulty level ('beginner', 'advanced', or 'challenge')
+        """
         self.difficulty = difficulty.lower()
         
         # Set move limits based on difficulty
@@ -41,44 +64,73 @@ class WordLadderGame:
             self.move_limit = 10
         elif self.difficulty == "advanced":
             self.move_limit = 15
-        else:  # challenge mode
+        elif self.difficulty == "challenge":
             self.move_limit = 12
+            # Add some random banned words in challenge mode
             word_list = list(self.word_graph.words)
-            self.banned_words = set(random.sample(word_list, min(5, len(word_list))))
+            self.banned_words = set(word_list[:5])  # Take first 5 words instead of random
         
-    def validate_word(self, word: str) -> bool:
-        """Check if a word exists in the dictionary and is not banned."""
+    def is_word_valid(self, word: str) -> bool:
+        """
+        Check if a word exists in the dictionary and isn't banned.
+        
+        Args:
+            word (str): Word to check
+            
+        Returns:
+            bool: True if the word is valid, False otherwise
+        """
         word = word.lower()
         return (self.word_graph.word_exists(word) and 
                 word not in self.banned_words)
         
     def is_valid_move(self, word: str) -> bool:
-        """Check if the proposed word is a valid one-letter transformation."""
-        if not self.validate_word(word):
+        """
+        Check if the proposed word is a valid next move.
+        
+        Args:
+            word (str): Word to check
+            
+        Returns:
+            bool: True if the move is valid, False otherwise
+        """
+        if not self.is_word_valid(word):
             return False
         if len(self.moves) >= self.move_limit:
             return False
         return word in self.word_graph.get_neighbors(self.current_word)
         
     def get_algorithm_comparison(self) -> Dict[str, Dict]:
-        """Compare paths and costs found by different algorithms."""
-        paths_and_costs = {
-            'BFS': self.search.bfs(self.current_word, self.target_word),
-            'UCS': self.search.ucs(self.current_word, self.target_word),
-            'A*': self.search.astar(self.current_word, self.target_word)
+        """
+        Compare paths and costs found by different algorithms.
+        
+        Returns:
+            Dict: Results from each algorithm including paths and costs
+        """
+        results = {}
+        algorithms = {
+            'BFS': self.search.bfs,
+            'UCS': self.search.ucs,
+            'A*': self.search.astar
         }
         
-        return {
-            name: {
-                'path': path,
-                'costs': costs
-            }
-            for name, (path, costs) in paths_and_costs.items()
-            if path is not None
-        }
+        for name, algorithm in algorithms.items():
+            path, costs = algorithm(self.current_word, self.target_word)
+            if path is not None:
+                results[name] = {
+                    'path': path,
+                    'costs': costs
+                }
+                
+        return results
         
     def get_hint(self) -> Tuple[Optional[str], str]:
-        """Get an intelligent hint based on the current game state and selected algorithm."""
+        """
+        Get a hint for the next move based on the selected algorithm.
+        
+        Returns:
+            Tuple[Optional[str], str]: Next suggested word and explanation
+        """
         if not self.best_path:
             return None, "No solution exists!"
             
@@ -86,11 +138,9 @@ class WordLadderGame:
         if current_index >= len(self.best_path) - 1:
             return None, "You're already at the target word!"
             
-        # Get algorithm comparisons with costs
         algorithm_paths = self.get_algorithm_comparison()
-        
-        # Get next word and costs for selected algorithm
         algo_info = algorithm_paths.get(self.selected_algorithm, {})
+        
         if not algo_info:
             return None, f"No solution found using {self.selected_algorithm}!"
             
@@ -98,23 +148,25 @@ class WordLadderGame:
         costs = algo_info['costs']
         next_word = path[current_index + 1]
         
-        # Create detailed hint message
-        hint_type = "Algorithm Analysis"
-        message = (
+        hint_message = (
             f"Using {self.selected_algorithm}:\n"
-            f"Current g(n) (cost so far): {costs['g_cost']}\n"
-            f"h(n) (estimated remaining cost): {costs['h_cost']}\n"
-            f"f(n) (total estimated cost): {costs['f_cost']}\n"
+            f"Current cost: {costs['g_cost']}\n"
+            f"Estimated remaining: {costs['h_cost']}\n"
+            f"Total estimated cost: {costs['f_cost']}\n"
             f"Suggested next word: '{next_word}'"
         )
             
-        return next_word, f"{hint_type}: {message}"
+        return next_word, hint_message
         
     def calculate_best_path(self) -> Optional[List[str]]:
-        """Calculate the optimal solution using the selected algorithm."""
+        """
+        Find the optimal solution path using the selected algorithm.
+        
+        Returns:
+            Optional[List[str]]: List of words in the optimal path, or None if no path exists
+        """
         algorithm_paths = self.get_algorithm_comparison()
         
-        # Store algorithm statistics
         self.algorithm_stats = {
             name: {
                 'path': info['path'],
@@ -124,30 +176,36 @@ class WordLadderGame:
             for name, info in algorithm_paths.items()
         }
         
-        # Use selected algorithm's path
         if self.selected_algorithm in algorithm_paths:
             return algorithm_paths[self.selected_algorithm]['path']
         
-        # Fallback to shortest available path if selected algorithm fails
+        # Find shortest available path if selected algorithm fails
         valid_paths = [info['path'] for info in algorithm_paths.values()]
         return min(valid_paths, key=len) if valid_paths else None
         
     def calculate_score(self) -> int:
-        """Calculate score based on moves taken, difficulty, and remaining moves."""
+        """
+        Calculate the player's score based on performance.
+        
+        Returns:
+            int: Final score
+        """
         if not self.best_path:
             return 0
             
         optimal_moves = len(self.best_path) - 1
         actual_moves = len(self.moves) - 1
+        
+        if actual_moves == 0:  # Prevent division by zero
+            return 0
+            
         remaining_moves = self.move_limit - actual_moves
         
-        # Base score calculation
-        base_score = 1000 * (optimal_moves / actual_moves)
-        
-        # Bonus for remaining moves
+        # Calculate score components
+        base_score = min(1000 * (optimal_moves / actual_moves), 1000)  # Cap at 1000
         move_bonus = remaining_moves * 100
         
-        # Difficulty multipliers
+        # Apply difficulty multipliers
         multipliers = {
             "beginner": 1.0,
             "advanced": 1.5,
@@ -157,11 +215,20 @@ class WordLadderGame:
         return int((base_score + move_bonus) * multipliers.get(self.difficulty, 1.0))
         
     def start_new_game(self, start_word: str, target_word: str) -> bool:
-        """Start a new game with the given start and target words."""
+        """
+        Initialize a new game with given start and target words.
+        
+        Args:
+            start_word (str): Starting word
+            target_word (str): Target word to reach
+            
+        Returns:
+            bool: True if game started successfully, False otherwise
+        """
         start_word = start_word.lower()
         target_word = target_word.lower()
         
-        if not (self.validate_word(start_word) and self.validate_word(target_word)):
+        if not (self.is_word_valid(start_word) and self.is_word_valid(target_word)):
             return False
             
         self.current_word = start_word
@@ -173,7 +240,15 @@ class WordLadderGame:
         return True
         
     def make_move(self, new_word: str) -> bool:
-        """Attempt to make a move with the given word."""
+        """
+        Attempt to make a move in the game.
+        
+        Args:
+            new_word (str): Word to move to
+            
+        Returns:
+            bool: True if move was valid and made, False otherwise
+        """
         new_word = new_word.lower()
         if not self.is_valid_move(new_word):
             return False
@@ -183,20 +258,40 @@ class WordLadderGame:
         return True
         
     def is_solved(self) -> bool:
-        """Check if the puzzle has been solved."""
-        solved = self.current_word == self.target_word
-        if solved:
+        """
+        Check if the puzzle has been solved.
+        
+        Returns:
+            bool: True if current word matches target word, False otherwise
+        """
+        if self.current_word == self.target_word:
             self.score = self.calculate_score()
-        return solved
+            return True
+        return False
         
     def get_minimum_moves(self) -> int:
-        """Get the minimum number of moves required to solve the puzzle."""
+        """
+        Get the minimum number of moves needed to solve the puzzle.
+        
+        Returns:
+            int: Minimum number of moves required
+        """
         return len(self.best_path) - 1 if self.best_path else 0
         
     def get_current_moves(self) -> int:
-        """Get the number of moves made so far."""
+        """
+        Get the number of moves made so far.
+        
+        Returns:
+            int: Number of moves made
+        """
         return len(self.moves) - 1
         
     def get_remaining_moves(self) -> int:
-        """Get the number of moves remaining before hitting the limit."""
+        """
+        Get the number of moves remaining before hitting the limit.
+        
+        Returns:
+            int: Number of moves remaining
+        """
         return self.move_limit - self.get_current_moves()

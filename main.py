@@ -1,6 +1,22 @@
+"""
+Word Ladder Game Main Module
+
+This module contains the main game loop and user interface for the Word Ladder game.
+"""
+
 import os
 import platform
+from rich.console import Console
+from rich.panel import Panel
+from rich.layout import Layout
+from rich.table import Table
+from rich.text import Text
+from rich.prompt import Prompt
+from rich.style import Style
 from game import WordLadderGame
+
+# Initialize Rich console
+console = Console()
 
 def clear_screen():
     """Clear the terminal screen based on the operating system."""
@@ -9,133 +25,207 @@ def clear_screen():
     else:
         os.system('clear')
 
+def create_title(text: str) -> Panel:
+    """Create a styled title panel."""
+    return Panel(
+        Text(text, style="bold white on magenta", justify="center"),
+        border_style="magenta"
+    )
+
+def create_info_panel(content: str, title: str = "") -> Panel:
+    """Create an information panel with optional title."""
+    return Panel(
+        Text.from_markup(content, justify="left"),  # Use from_markup to properly render colors
+        title=title,
+        border_style="cyan"
+    )
+
 def select_difficulty() -> str:
-    """Let the user select the game difficulty."""
-    print("\nSelect difficulty level:")
-    print("1. Beginner (Simple word transformations)")
-    print("2. Advanced (Complex transformations)")
-    print("3. Challenge (With banned words)")
+    """
+    Let the user select the game difficulty.
+    
+    Returns:
+        str: Selected difficulty level
+    """
+    console.print(create_title("Select Difficulty Level"))
+    
+    table = Table(show_header=False, box=None)
+    table.add_row("[white on blue]1[/]", "Beginner - Simple word transformations")
+    table.add_row("[white on yellow]2[/]", "Advanced - Complex transformations")
+    table.add_row("[white on red]3[/]", "Challenge - With banned words")
+    
+    console.print(Panel(table, border_style="blue"))
     
     while True:
-        choice = input("Enter your choice (1-3): ").strip()
+        choice = Prompt.ask("Enter your choice", choices=["1", "2", "3"])
         if choice == "1":
             return "beginner"
         elif choice == "2":
             return "advanced"
         elif choice == "3":
             return "challenge"
-        print("Invalid choice. Please enter 1, 2, or 3.")
 
 def display_algorithm_comparison(game: WordLadderGame):
     """Display comparison of different algorithm results."""
     if not game.algorithm_stats:
+        console.print(create_info_panel("No algorithm statistics available yet."))
         return
     
-    print("\nAlgorithm Comparison:")
-    print("-" * 60)
+    table = Table(title="Algorithm Comparison", show_header=True, header_style="bold cyan")
+    table.add_column("Algorithm", style="white on blue")
+    table.add_column("Path Length")
+    table.add_column("Path")
+    table.add_column("Costs")
+    
     for algo, stats in game.algorithm_stats.items():
-        print(f"{algo}:")
-        print(f"  Path length: {stats['length']}")
-        print(f"  Path: {' -> '.join(stats['path'])}")
-        print("  Costs:")
-        print(f"    g(n) (path cost): {stats['costs']['g_cost']}")
-        print(f"    h(n) (heuristic): {stats['costs']['h_cost']}")
-        print(f"    f(n) (total): {stats['costs']['f_cost']}")
-    print("-" * 60)
+        costs = stats['costs']
+        table.add_row(
+            algo,
+            str(stats['length']),
+            " → ".join(stats['path']),
+            f"g(n): {costs['g_cost']}\nh(n): {costs['h_cost']}\nf(n): {costs['f_cost']}"
+        )
+    
+    console.print(Panel(table, border_style="blue"))
 
 def select_algorithm() -> str:
-    """Let the user select the search algorithm."""
-    print("\nSelect search algorithm:")
-    print("1. BFS (Breadth-First Search)")
-    print("2. UCS (Uniform Cost Search)")
-    print("3. A* (A-Star Search)")
+    """
+    Let the user select the search algorithm.
+    
+    Returns:
+        str: Selected algorithm name
+    """
+    console.print(create_title("Select Search Algorithm"))
+    
+    table = Table(show_header=False, box=None)
+    table.add_row("[white on blue]1[/]", "BFS - Breadth-First Search")
+    table.add_row("[white on green]2[/]", "UCS - Uniform Cost Search")
+    table.add_row("[white on yellow]3[/]", "A* - A-Star Search")
+    
+    console.print(Panel(table, border_style="blue"))
     
     while True:
-        choice = input("Enter your choice (1-3): ").strip()
+        choice = Prompt.ask("Enter your choice", choices=["1", "2", "3"])
         if choice == "1":
             return "BFS"
         elif choice == "2":
             return "UCS"
         elif choice == "3":
             return "A*"
-        print("Invalid choice. Please enter 1, 2, or 3.")
 
 def display_game_state(game: WordLadderGame):
     """Display the current game state."""
-    print("\n" + "="*50)
-    print(f"Mode: {game.difficulty.capitalize()}")
-    print(f"Current Algorithm: {game.selected_algorithm}")
+    # Game info panel
+    info_content = [
+        f"[white on blue] Mode [/] {game.difficulty.capitalize()}",
+        f"[white on cyan] Algorithm [/] {game.selected_algorithm}",
+    ]
+    
     if game.difficulty == "challenge":
-        print(f"Banned words: {', '.join(game.banned_words)}")
+        info_content.append(f"[white on red] Banned Words [/] {', '.join(game.banned_words)}")
     
-    print(f"\nStart word: {game.moves[0]}")
-    print(f"Target word: {game.target_word}")
-    print(f"Current word: {game.current_word}")
-    print(f"Moves made: {len(game.moves) - 1}")
-    print(f"Moves remaining: {game.get_remaining_moves()}")
+    # Game progress panel
+    progress_content = [
+        f"[black on green] Start [/] {game.moves[0]}",
+        f"[black on red] Target [/] {game.target_word}",
+        f"[black on yellow] Current [/] {game.current_word}",
+        f"[white on blue] Moves Made [/] {len(game.moves) - 1}",
+        f"[white on magenta] Moves Left [/] {game.get_remaining_moves()}"
+    ]
     
+    # Move history
     if game.moves:
-        print("\nMove history:", " -> ".join(game.moves))
+        moves_text = " → ".join(f"[black on cyan]{word}[/]" for word in game.moves)
+        progress_content.append(f"\n[white on blue] History [/] {moves_text}")
     
-    print("\nCommands:")
-    print("- Enter a word to make a move")
-    print("- 'hint' to get an AI-powered hint")
-    print("- 'algo' to change search algorithm")
-    print("- 'compare' to see algorithm comparisons")
-    print("- 'solution' to see the optimal solution")
-    print("- 'mode' to change difficulty")
-    print("- 'new' to start a new game")
-    print("- 'quit' to exit")
+    # Commands panel
+    commands = [
+        "[white on green] WORD [/] Enter a word to make a move",
+        "[white on yellow] hint [/] Get AI-powered hint",
+        "[white on blue] algo [/] Change algorithm",
+        "[white on cyan] compare [/] View algorithm comparison",
+        "[white on magenta] solution [/] See optimal solution",
+        "[white on red] mode [/] Change difficulty",
+        "[black on white] new [/] Start a new game",
+        "[white on red] quit [/] Exit game"
+    ]
+    
+    # Display panels
+    console.print(create_info_panel("\n".join(info_content), "Game Info"))
+    console.print(create_info_panel("\n".join(progress_content), "Game Progress"))
+    console.print(create_info_panel("\n".join(commands), "Available Commands"))
 
 def display_welcome_message():
     """Display the welcome message and game instructions."""
-    print("\n" + "="*50)
-    print("Welcome to Word Ladder Adventure!")
-    print("="*50)
-    print("\nGame Rules:")
-    print("1. Transform the start word into the target word")
-    print("2. Change only one letter at a time")
-    print("3. Each intermediate word must be valid")
-    print("4. Complete the transformation in as few moves as possible")
-    print("\nFeatures:")
-    print("- Multiple difficulty levels")
-    print("- AI-powered hints using different search algorithms")
-    print("- Algorithm comparison and analysis")
-    print("- Score tracking based on performance")
-    print("\nLet's begin!")
+    title = create_title("Welcome to Word Ladder Adventure!")
+    
+    rules = [
+        "[white on blue] 1 [/] Transform the start word into the target word",
+        "[white on blue] 2 [/] Change only one letter at a time",
+        "[white on blue] 3 [/] Each intermediate word must be valid",
+        "[white on blue] 4 [/] Complete the transformation in as few moves as possible"
+    ]
+    
+    features = [
+        "[white on green] ★ [/] Multiple difficulty levels",
+        "[white on yellow] ★ [/] AI-powered hints using different search algorithms",
+        "[white on cyan] ★ [/] Algorithm comparison and analysis",
+        "[white on magenta] ★ [/] Score tracking based on performance"
+    ]
+    
+    console.print(title)
+    console.print(create_info_panel("\n".join(rules), "Game Rules"))
+    console.print(create_info_panel("\n".join(features), "Features"))
+
+def display_solution(game: WordLadderGame):
+    """Display the optimal solution and algorithm statistics."""
+    if not game.best_path:
+        console.print(create_info_panel("[white on red] No solution exists! [/]", "Solution"))
+        return
+    
+    solution_content = [
+        f"[white on green] Optimal Solution [/] {' → '.join(f'[black on cyan]{word}[/]' for word in game.best_path)}"
+    ]
+    
+    if game.selected_algorithm in game.algorithm_stats:
+        costs = game.algorithm_stats[game.selected_algorithm]['costs']
+        solution_content.extend([
+            f"\n[white on blue] {game.selected_algorithm} Algorithm Stats [/]",
+            f"[white on cyan] Total Cost [/] {costs['f_cost']}",
+            f"[white on yellow] Path Cost [/] {costs['g_cost']}",
+            f"[white on magenta] Heuristic [/] {costs['h_cost']}"
+        ])
+    
+    console.print(create_info_panel("\n".join(solution_content), "Solution"))
 
 def main():
     """Main game loop."""
-    # Initialize game
     game = WordLadderGame()
     game.initialize_game("dictionary/words.txt")
     
-    # Display welcome message
     clear_screen()
     display_welcome_message()
     
-    # Main game loop
     while True:
         if not game.current_word:
-            print("\nEnter two words to start a new game.")
-            start_word = input("Start word: ").strip().lower()
-            target_word = input("Target word: ").strip().lower()
+            console.print("\n[white on blue] New Game [/] Enter two words to start")
+            start_word = Prompt.ask("Start word").strip().lower()
+            target_word = Prompt.ask("Target word").strip().lower()
             
             if game.start_new_game(start_word, target_word):
                 clear_screen()
-                print(f"\nGame started! Transform '{start_word}' into '{target_word}'")
-                print("Change one letter at a time to create valid words.")
-                print(f"You have {game.get_remaining_moves()} moves available.")
+                console.print(f"\n[white on green] Game Started! [/] Transform '{start_word}' into '{target_word}'")
+                console.print(f"[white on blue] Moves Available [/] {game.get_remaining_moves()}")
             else:
-                print("\nError: Both words must exist in the dictionary and not be banned!")
+                console.print("\n[white on red] Error [/] Both words must exist in the dictionary and not be banned!")
                 continue
         
         display_game_state(game)
         
-        command = input("\nEnter your move: ").strip().lower()
+        command = Prompt.ask("\nEnter your move").strip().lower()
         
         if command == 'quit':
-            print("\nThanks for playing!")
+            console.print("\n[white on green] Thanks for playing! [/]")
             break
         elif command == 'new':
             game.current_word = None
@@ -151,42 +241,37 @@ def main():
         elif command == 'hint':
             hint_word, hint_message = game.get_hint()
             if hint_word:
-                print(f"\n{hint_message}")
+                console.print(create_info_panel(hint_message, "Hint"))
             else:
-                print("\nNo hint available!")
+                console.print("\n[white on red] No hint available! [/]")
             continue
         elif command == 'compare':
             display_algorithm_comparison(game)
             continue
         elif command == 'solution':
-            if game.best_path:
-                print("\nOptimal solution:", " -> ".join(game.best_path))
-                print(f"\nUsing {game.selected_algorithm} algorithm:")
-                costs = game.algorithm_stats[game.selected_algorithm]['costs']
-                print(f"Total cost (f(n)): {costs['f_cost']}")
-                print(f"Path cost (g(n)): {costs['g_cost']}")
-                print(f"Heuristic estimate (h(n)): {costs['h_cost']}")
-            else:
-                print("\nNo solution exists!")
+            display_solution(game)
             continue
         
-        # Handle word moves
         if game.is_valid_move(command):
             game.make_move(command)
             if game.is_solved():
-                print(f"\nCongratulations! You solved the puzzle in {len(game.moves)-1} moves!")
-                print(f"Your score: {game.score}")
+                console.print(f"\n[white on green] Congratulations! [/] You solved the puzzle in {len(game.moves)-1} moves!")
+                console.print(f"[white on cyan] Score [/] {game.score}")
                 game.current_word = None
             elif game.get_remaining_moves() <= 0:
-                print("\nGame Over! You've run out of moves.")
-                print(f"The optimal solution was: {' -> '.join(game.best_path)}")
+                console.print("\n[white on red] Game Over! [/] You've run out of moves.")
+                if game.best_path:
+                    console.print(f"[white on blue] Optimal Solution [/] {' → '.join(game.best_path)}")
                 game.current_word = None
         else:
-            print("\nInvalid move! The word must:")
-            print("1. Exist in the dictionary")
-            print("2. Differ by exactly one letter")
-            print("3. Not be a banned word")
-            print("4. Be within the move limit")
+            console.print(create_info_panel(
+                "[white on red] Invalid Move [/] The word must:\n"
+                "[white on blue] 1 [/] Exist in the dictionary\n"
+                "[white on blue] 2 [/] Differ by exactly one letter\n"
+                "[white on blue] 3 [/] Not be a banned word\n"
+                "[white on blue] 4 [/] Be within the move limit",
+                "Invalid Move"
+            ))
 
 if __name__ == "__main__":
     main()
