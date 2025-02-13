@@ -1,5 +1,5 @@
 from collections import deque
-from typing import List, Set, Dict, Optional
+from typing import List, Set, Dict, Optional, Tuple
 from heapq import heappush, heappop
 from word_graph import WordGraph
 
@@ -7,22 +7,57 @@ class SearchAlgorithms:
     def __init__(self, word_graph: WordGraph):
         self.word_graph = word_graph
 
-    def bfs(self, start: str, target: str) -> Optional[List[str]]:
+    def g_cost(self, path: List[str]) -> int:
         """
-        Breadth-First Search implementation to find shortest path between words.
-        Returns the path as a list of words, or None if no path exists.
+        Calculate g(n): the cost of the path from start to current node.
+        In word ladder, this is simply the number of transformations made.
+        """
+        return len(path) - 1
+
+    def h_cost(self, current: str, target: str) -> int:
+        """
+        Calculate h(n): the heuristic estimate of cost from current to target.
+        Uses letter differences as an admissible heuristic.
+        """
+        return sum(1 for a, b in zip(current, target) if a != b)
+
+    def f_cost(self, g: int, h: int) -> int:
+        """
+        Calculate f(n) = g(n) + h(n): the estimated total cost through this path.
+        """
+        return g + h
+
+    def get_path_info(self, path: List[str], target: str) -> Dict[str, int]:
+        """
+        Get detailed information about a path including g, h, and f costs.
+        """
+        current = path[-1]
+        g = self.g_cost(path)
+        h = self.h_cost(current, target)
+        f = self.f_cost(g, h)
+        return {
+            'g_cost': g,  # Cost so far
+            'h_cost': h,  # Estimated cost to goal
+            'f_cost': f,  # Total estimated cost
+            'path_length': len(path)
+        }
+
+    def bfs(self, start: str, target: str) -> Tuple[Optional[List[str]], Dict[str, int]]:
+        """
+        Breadth-First Search implementation.
+        Returns the path and its cost information.
         """
         if not (self.word_graph.word_exists(start) and self.word_graph.word_exists(target)):
-            return None
+            return None, {}
 
         queue = deque([(start, [start])])
         visited = {start}
-
+        
         while queue:
             current_word, path = queue.popleft()
             
             if current_word == target:
-                return path
+                return path, self.get_path_info(path, target)
 
             for neighbor in self.word_graph.get_neighbors(current_word):
                 if neighbor not in visited:
@@ -30,69 +65,60 @@ class SearchAlgorithms:
                     new_path = path + [neighbor]
                     queue.append((neighbor, new_path))
 
-        return None
+        return None, {}
 
-    def ucs(self, start: str, target: str) -> Optional[List[str]]:
+    def ucs(self, start: str, target: str) -> Tuple[Optional[List[str]], Dict[str, int]]:
         """
         Uniform Cost Search implementation.
-        Since all transformations have equal cost (1), this will behave similarly to BFS
-        but is implemented with a priority queue for extensibility.
+        Returns the path and its cost information.
         """
         if not (self.word_graph.word_exists(start) and self.word_graph.word_exists(target)):
-            return None
+            return None, {}
 
-        # Priority queue entries are (cost, word, path)
-        queue = [(0, start, [start])]
+        queue = [(0, start, [start])]  # (cost, word, path)
         visited = {start}
 
         while queue:
             cost, current_word, path = heappop(queue)
 
             if current_word == target:
-                return path
+                return path, self.get_path_info(path, target)
 
             for neighbor in self.word_graph.get_neighbors(current_word):
                 if neighbor not in visited:
                     visited.add(neighbor)
                     new_path = path + [neighbor]
-                    # Cost increases by 1 for each transformation
-                    heappush(queue, (cost + 1, neighbor, new_path))
+                    g_cost = self.g_cost(new_path)
+                    heappush(queue, (g_cost, neighbor, new_path))
 
-        return None
+        return None, {}
 
-    def _heuristic(self, word: str, target: str) -> int:
-        """
-        Heuristic function for A* search.
-        Returns the number of differing letters between two words.
-        """
-        return sum(1 for a, b in zip(word, target) if a != b)
-
-    def astar(self, start: str, target: str) -> Optional[List[str]]:
+    def astar(self, start: str, target: str) -> Tuple[Optional[List[str]], Dict[str, int]]:
         """
         A* Search implementation using letter differences as heuristic.
+        Returns the path and its cost information.
         """
         if not (self.word_graph.word_exists(start) and self.word_graph.word_exists(target)):
-            return None
+            return None, {}
 
-        # Priority queue entries are (f_score, word, path)
-        # f_score = g_score (path length) + heuristic
-        queue = [(self._heuristic(start, target), start, [start])]
+        queue = [(self.h_cost(start, target), start, [start])]
         visited = {start}
-        g_scores = {start: 0}  # Cost from start to current node
+        g_scores = {start: 0}
 
         while queue:
             _, current_word, path = heappop(queue)
 
             if current_word == target:
-                return path
+                return path, self.get_path_info(path, target)
 
             for neighbor in self.word_graph.get_neighbors(current_word):
                 if neighbor not in visited:
                     visited.add(neighbor)
-                    g_score = g_scores[current_word] + 1
-                    g_scores[neighbor] = g_score
                     new_path = path + [neighbor]
-                    f_score = g_score + self._heuristic(neighbor, target)
-                    heappush(queue, (f_score, neighbor, new_path))
+                    g = self.g_cost(new_path)
+                    h = self.h_cost(neighbor, target)
+                    f = self.f_cost(g, h)
+                    g_scores[neighbor] = g
+                    heappush(queue, (f, neighbor, new_path))
 
-        return None
+        return None, {}
