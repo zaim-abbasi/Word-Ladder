@@ -134,25 +134,34 @@ class WordLadderGame:
         if not self.best_path:
             return None, "No solution exists!"
             
-        current_index = self.best_path.index(self.current_word)
+        # Find the current position in the best path
+        try:
+            current_index = self.best_path.index(self.current_word)
+        except ValueError:
+            # If current word is not in best path, recalculate path from current position
+            new_path, costs = getattr(self.search, self.selected_algorithm.lower())(self.current_word, self.target_word)
+            if not new_path:
+                return None, "No valid path found from current position!"
+            self.best_path = new_path
+            current_index = 0
+
         if current_index >= len(self.best_path) - 1:
             return None, "You're already at the target word!"
             
-        algorithm_paths = self.get_algorithm_comparison()
-        algo_info = algorithm_paths.get(self.selected_algorithm, {})
+        # Get the next word in the path
+        next_word = self.best_path[current_index + 1]
         
-        if not algo_info:
-            return None, f"No solution found using {self.selected_algorithm}!"
-            
-        path = algo_info['path']
-        costs = algo_info['costs']
-        next_word = path[current_index + 1]
+        # Calculate costs for the current position
+        current_path = self.best_path[current_index:]
+        g_cost = len(current_path) - 1  # Steps from current to goal
+        h_cost = self.search.h_cost(self.current_word, self.target_word)
+        f_cost = g_cost + h_cost
         
         hint_message = (
             f"Using {self.selected_algorithm}:\n"
-            f"Current cost: {costs['g_cost']}\n"
-            f"Estimated remaining: {costs['h_cost']}\n"
-            f"Total estimated cost: {costs['f_cost']}\n"
+            f"Current cost: {g_cost}\n"
+            f"Estimated remaining: {h_cost}\n"
+            f"Total estimated cost: {f_cost}\n"
             f"Suggested next word: '{next_word}'"
         )
             
