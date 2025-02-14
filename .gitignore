@@ -1,0 +1,2 @@
+# put _pycache_ in .gitignore
+_pytest_cache/
