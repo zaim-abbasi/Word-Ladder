@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "rich": "^13.7.0",
-    "python-rich": "^0.1.0"
+    "python-rich": "^0.1.0",
+    "graphviz": "^0.20.0"
   }
 }

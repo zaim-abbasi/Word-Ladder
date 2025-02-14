@@ -1,10 +1,3 @@
-"""
-Word Ladder Game Main Module
-
-This module contains the main game loop and user interface for the Word Ladder game.
-A retro-themed word puzzle arcade experience.
-"""
-
 import os
 import platform
 from rich.console import Console
@@ -19,22 +12,18 @@ from rich.box import DOUBLE, ROUNDED, HEAVY, ASCII_DOUBLE_HEAD
 from rich.columns import Columns
 from game import WordLadderGame
 
-# Initialize Rich console
 console = Console()
 
 def clear_screen():
-    """Clear the terminal screen based on the operating system."""
     if platform.system().lower() == "windows":
         os.system('cls')
     else:
         os.system('clear')
 
 def create_neon_text(text: str, color: str = "bright_yellow") -> str:
-    """Create a neon-style text effect."""
     return f"[{color}]≪ {text} ≫[/]"
 
 def create_title(text: str) -> Panel:
-    """Create a styled title panel."""
     return Panel(
         Text(text, style="bold black on bright_yellow", justify="center"),
         box=ASCII_DOUBLE_HEAD,
@@ -43,7 +32,6 @@ def create_title(text: str) -> Panel:
     )
 
 def create_info_panel(content: str, title: str = "") -> Panel:
-    """Create an information panel with optional title."""
     return Panel(
         Align.center(Text.from_markup(content)),
         title=title,
@@ -53,15 +41,12 @@ def create_info_panel(content: str, title: str = "") -> Panel:
     )
 
 def create_retro_box(text: str, style: str = "black on bright_yellow") -> str:
-    """Create a retro-style box around text."""
     return f"[{style}]{text}[/]"
 
 def create_separator() -> str:
-    """Create a decorative separator."""
     return "\n[bright_yellow]" + "═" * console.width + "[/]\n"
 
 def select_difficulty() -> str:
-    """Let the user select the game difficulty."""
     console.print(create_title("⚡ SELECT YOUR CHALLENGE ⚡"))
     
     table = Table(show_header=False, box=ASCII_DOUBLE_HEAD, border_style="bright_yellow")
@@ -102,7 +87,6 @@ def select_difficulty() -> str:
             return "challenge"
 
 def display_algorithm_comparison(game: WordLadderGame):
-    """Display comparison of different algorithm results."""
     if not game.algorithm_stats:
         console.print(create_info_panel("No algorithm data available yet."))
         return
@@ -125,7 +109,7 @@ def display_algorithm_comparison(game: WordLadderGame):
             create_retro_box(f" {algo} "),
             str(stats['length']),
             " ⟹ ".join(stats['path']),
-            f"Cost: {costs['f_cost']}\nPath: {costs['g_cost']}\nHeur: {costs['h_cost']}"
+            f"Cost {costs['f_cost']}\nPath {costs['g_cost']}\nHeur {costs['h_cost']}"
         )
     
     console.print(Panel(
@@ -136,7 +120,6 @@ def display_algorithm_comparison(game: WordLadderGame):
     ))
 
 def select_algorithm() -> str:
-    """Let the user select the search algorithm."""
     console.print(create_title("⚡ SELECT YOUR ALGORITHM ⚡"))
     
     table = Table(show_header=False, box=ASCII_DOUBLE_HEAD, border_style="bright_yellow")
@@ -177,9 +160,6 @@ def select_algorithm() -> str:
             return "A*"
 
 def display_game_state(game: WordLadderGame):
-    """Display the current game state."""
-    
-    # Game stats panel
     stats_table = Table(show_header=False, box=ASCII_DOUBLE_HEAD, border_style="bright_yellow")
     stats_table.add_row(
         create_retro_box(" MODE ", "black on green"),
@@ -202,7 +182,6 @@ def display_game_state(game: WordLadderGame):
         box=ASCII_DOUBLE_HEAD
     ))
     
-    # Game progress
     progress_table = Table(show_header=False, box=ASCII_DOUBLE_HEAD, border_style="bright_yellow")
     progress_table.add_row(
         create_retro_box(" START ", "black on green"),
@@ -224,7 +203,6 @@ def display_game_state(game: WordLadderGame):
         box=ASCII_DOUBLE_HEAD
     ))
     
-    # Move history
     if game.moves:
         moves_text = " ⟹ ".join(
             f"[bright_cyan]{word}[/]" for word in game.moves
@@ -236,7 +214,6 @@ def display_game_state(game: WordLadderGame):
             box=ASCII_DOUBLE_HEAD
         ))
     
-    # Commands in two columns
     commands_left = Table(show_header=False, box=None, padding=(0, 1))
     commands_right = Table(show_header=False, box=None, padding=(0, 1))
     
@@ -260,7 +237,6 @@ def display_game_state(game: WordLadderGame):
     ))
 
 def display_welcome_message():
-    """Display the welcome message and game instructions."""
     console.print(create_title("⚡ WELCOME TO THE WORD LADDER ARCADE ⚡"))
     
     rules_table = Table(show_header=False, box=ASCII_DOUBLE_HEAD, border_style="bright_yellow")
@@ -281,39 +257,14 @@ def display_welcome_message():
         "[bright_white]Complete in minimum moves[/]"
     )
     
-    features_table = Table(show_header=False, box=ASCII_DOUBLE_HEAD, border_style="bright_yellow")
-    features_table.add_row(
-        "[bright_yellow]★[/]",
-        "[bright_green]Multiple difficulty levels[/]"
-    )
-    features_table.add_row(
-        "[bright_yellow]★[/]",
-        "[bright_cyan]AI-powered hints[/]"
-    )
-    features_table.add_row(
-        "[bright_yellow]★[/]",
-        "[bright_magenta]Algorithm comparison[/]"
-    )
-    features_table.add_row(
-        "[bright_yellow]★[/]",
-        "[bright_yellow]Score tracking[/]"
-    )
-    
     console.print(Panel(
         rules_table,
         title=create_neon_text("GAME RULES"),
         border_style="bright_yellow",
         box=ASCII_DOUBLE_HEAD
     ))
-    console.print(Panel(
-        features_table,
-        title=create_neon_text("FEATURES"),
-        border_style="bright_yellow",
-        box=ASCII_DOUBLE_HEAD
-    ))
 
 def display_solution(game: WordLadderGame):
-    """Display the optimal solution and algorithm statistics."""
     if not game.best_path:
         console.print(create_info_panel(
             "[bright_red]No solution exists![/]",
@@ -331,7 +282,7 @@ def display_solution(game: WordLadderGame):
         costs = game.algorithm_stats[game.selected_algorithm]['costs']
         solution_table.add_row(
             create_retro_box(" STATS ", "black on magenta"),
-            f"[bright_white]Total: {costs['f_cost']} | Path: {costs['g_cost']} | Heur: {costs['h_cost']}[/]"
+            f"[bright_white]Total {costs['f_cost']} | Path {costs['g_cost']} | Heur {costs['h_cost']}[/]"
         )
     
     console.print(Panel(
@@ -342,14 +293,12 @@ def display_solution(game: WordLadderGame):
     ))
 
 def main():
-    """Main game loop."""
     game = WordLadderGame()
     game.initialize_game("dictionary/words.txt")
     
     clear_screen()
     display_welcome_message()
     
-    # Set initial difficulty and start first game
     difficulty = select_difficulty()
     game.set_difficulty(difficulty)
     
@@ -403,27 +352,35 @@ def main():
             display_solution(game)
             continue
         
+        if not game.word_graph.word_exists(command):
+            console.print(create_info_panel(
+                "[bright_red]Word not found in dictionary![/]",
+                create_neon_text("ERROR")
+            ))
+            continue
+            
         if game.is_valid_move(command):
             game.make_move(command)
+            clear_screen()
             if game.is_solved():
                 console.print(create_info_panel(
                     f"[bright_green]★ CONGRATULATIONS! ★[/]\n"
                     f"Puzzle solved in [bright_yellow]{len(game.moves)-1}[/] moves!\n"
-                    f"Score: [bright_cyan]{game.score}[/]",
+                    f"Score [bright_cyan]{game.score}[/]",
                     create_neon_text("VICTORY")
                 ))
                 game.current_word = None
             elif game.get_remaining_moves() <= 0:
                 console.print(create_info_panel(
                     "[bright_red]★ GAME OVER! ★[/] You've run out of moves.\n"
-                    f"Solution: [bright_cyan]{' ⟹ '.join(game.best_path)}[/]",
+                    f"Solution [bright_cyan]{' ⟹ '.join(game.best_path)}[/]",
                     create_neon_text("GAME OVER")
                 ))
                 game.current_word = None
         else:
             console.print(create_info_panel(
                 "[bright_red]Invalid move![/]\n\n"
-                "The word must:\n"
+                "The word must\n"
                 f"{create_retro_box(' 1 ', 'black on green')} Exist in dictionary\n"
                 f"{create_retro_box(' 2 ', 'black on yellow')} Differ by one letter\n"
                 f"{create_retro_box(' 3 ', 'black on cyan')} Not be banned\n"

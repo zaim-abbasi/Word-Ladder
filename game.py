@@ -141,7 +141,8 @@ class WordLadderGame:
         try:
             current_index = self.best_path.index(self.current_word)
         except ValueError:
-            new_path, costs = getattr(self.search, self.selected_algorithm.lower())(
+            algo_name = 'astar' if self.selected_algorithm == 'A*' else self.selected_algorithm.lower()
+            new_path, costs = getattr(self.search, algo_name)(
                 self.current_word, self.target_word
             )
             if not new_path:
@@ -160,11 +161,11 @@ class WordLadderGame:
         f_cost = g_cost + h_cost
         
         hint_message = (
-            f"Using {self.selected_algorithm}:\n"
-            f"Current cost: {g_cost}\n"
-            f"Estimated remaining: {h_cost}\n"
-            f"Total estimated cost: {f_cost}\n"
-            f"Suggested next word: '{next_word}'"
+            f"Using {self.selected_algorithm}\n"
+            f"Current cost {g_cost}\n"
+            f"Estimated remaining {h_cost}\n"
+            f"Total estimated cost {f_cost}\n"
+            f"Suggested next word '{next_word}'"
         )
             
         return next_word, hint_message

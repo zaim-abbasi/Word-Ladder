@@ -8,45 +8,27 @@ class SearchAlgorithms:
         self.word_graph = word_graph
 
     def g_cost(self, path: List[str]) -> int:
-        """
-        Calculate g(n): the cost of the path from start to current node.
-        In word ladder, this is simply the number of transformations made.
-        """
         return len(path) - 1
 
     def h_cost(self, current: str, target: str) -> int:
-        """
-        Calculate h(n): the heuristic estimate of cost from current to target.
-        Uses letter differences as an admissible heuristic.
-        """
         return sum(1 for a, b in zip(current, target) if a != b)
 
     def f_cost(self, g: int, h: int) -> int:
-        """
-        Calculate f(n) = g(n) + h(n): the estimated total cost through this path.
-        """
         return g + h
 
     def get_path_info(self, path: List[str], target: str) -> Dict[str, int]:
-        """
-        Get detailed information about a path including g, h, and f costs.
-        """
         current = path[-1]
         g = self.g_cost(path)
         h = self.h_cost(current, target)
         f = self.f_cost(g, h)
         return {
-            'g_cost': g,  # Cost so far
-            'h_cost': h,  # Estimated cost to goal
-            'f_cost': f,  # Total estimated cost
+            'g_cost': g,
+            'h_cost': h,
+            'f_cost': f,
             'path_length': len(path)
         }
 
     def bfs(self, start: str, target: str) -> Tuple[Optional[List[str]], Dict[str, int]]:
-        """
-        Breadth-First Search implementation.
-        Returns the path and its cost information.
-        """
         if not (self.word_graph.word_exists(start) and self.word_graph.word_exists(target)):
             return None, {}
 
@@ -68,14 +50,10 @@ class SearchAlgorithms:
         return None, {}
 
     def ucs(self, start: str, target: str) -> Tuple[Optional[List[str]], Dict[str, int]]:
-        """
-        Uniform Cost Search implementation.
-        Returns the path and its cost information.
-        """
         if not (self.word_graph.word_exists(start) and self.word_graph.word_exists(target)):
             return None, {}
 
-        queue = [(0, start, [start])]  # (cost, word, path)
+        queue = [(0, start, [start])]
         visited = {start}
 
         while queue:
@@ -94,10 +72,6 @@ class SearchAlgorithms:
         return None, {}
 
     def astar(self, start: str, target: str) -> Tuple[Optional[List[str]], Dict[str, int]]:
-        """
-        A* Search implementation using letter differences as heuristic.
-        Returns the path and its cost information.
-        """
         if not (self.word_graph.word_exists(start) and self.word_graph.word_exists(target)):
             return None, {}
 
