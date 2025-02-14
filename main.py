@@ -349,28 +349,18 @@ def main():
     clear_screen()
     display_welcome_message()
     
+    # Set initial difficulty and start first game
+    difficulty = select_difficulty()
+    game.set_difficulty(difficulty)
+    
     while True:
         if not game.current_word:
-            console.print()
+            game.start_new_game_for_difficulty()
+            clear_screen()
             console.print(create_info_panel(
-                create_neon_text("Enter two words to start your adventure!"),
-                create_neon_text("NEW GAME")
+                f"Transform [bright_green]{game.current_word}[/] into [bright_red]{game.target_word}[/]",
+                create_neon_text("NEW PUZZLE")
             ))
-            start_word = Prompt.ask("[bright_yellow]Start word[/]").strip().lower()
-            target_word = Prompt.ask("[bright_yellow]Target word[/]").strip().lower()
-            
-            if game.start_new_game(start_word, target_word):
-                clear_screen()
-                console.print(create_info_panel(
-                    f"Transform [bright_green]{start_word}[/] into [bright_red]{target_word}[/]",
-                    create_neon_text("GAME STARTED")
-                ))
-            else:
-                console.print(create_info_panel(
-                    "[bright_red]Invalid words! Both must exist in dictionary and not be banned.[/]",
-                    create_neon_text("ERROR")
-                ))
-                continue
         
         display_game_state(game)
         

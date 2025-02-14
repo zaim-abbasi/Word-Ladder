@@ -7,6 +7,7 @@
     "start": "python main.py"
   },
   "dependencies": {
-    "rich": "^13.7.0"
+    "rich": "^13.7.0",
+    "python-rich": "^0.1.0"
   }
 }
