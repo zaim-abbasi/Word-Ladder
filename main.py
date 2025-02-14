@@ -10,7 +10,7 @@ from rich.style import Style
 from rich.align import Align
 from rich.box import DOUBLE, ROUNDED, HEAVY, ASCII_DOUBLE_HEAD
 from rich.columns import Columns
-from game import WordLadderGame  # Import WordLadderGame from game.py
+from game import WordLadderGame  # import WordLadderGame from game.py
 
 console = Console()
 

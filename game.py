@@ -1,7 +1,3 @@
-# Word Ladder Game - A fun word transformation puzzle
-# Author: Your Name
-# Created: 2024
-
 from typing import Optional, List, Tuple, Dict
 from word_graph import WordGraph
 from search import SearchAlgorithms
@@ -9,39 +5,39 @@ import random
 
 class WordLadderGame:
     def __init__(self):
-        # Core game components
+        # core game components
         self.word_graph = WordGraph()
         self.search = None
         
-        # Current game state
+        # current game state
         self.current_word = None
         self.target_word = None
         self.moves = []
         self.best_path = None
         
-        # Game settings
+        # game settings
         self.difficulty = "beginner"
         self.score = 0
         self.banned_words = set()
         self.move_limit = 10
         
-        # Algorithm settings
+        # algorithm settings
         self.algorithm_stats = {}
         self.selected_algorithm = 'A*'
         
-        # How hard we try to find good word pairs
+        # how hard we try to find good word pairs
         self.max_attempts = 100
         
     def initialize_game(self, dictionary_path: str):
         """Start up the game with our word dictionary"""
         try:
-            # Load and validate our dictionary
+            # load and validate our dictionary
             self.word_graph.load_words(dictionary_path)
             if self.word_graph.get_word_count() == 0:
                 print("Oops! Dictionary is empty")
                 return False
                 
-            # Build connections between words
+            # build connections between words
             self.word_graph.build_graph()
             self.search = SearchAlgorithms(self.word_graph)
             return True
@@ -53,7 +49,7 @@ class WordLadderGame:
         """Switch between different pathfinding strategies"""
         if algorithm in ['BFS', 'UCS', 'A*']:
             self.selected_algorithm = algorithm
-            # Recalculate best path with new algorithm
+            # recalculate best path with new algorithm
             if self.current_word and self.target_word:
                 self.best_path = self.calculate_best_path()
     
@@ -62,7 +58,7 @@ class WordLadderGame:
         try:
             self.difficulty = difficulty.lower()
             
-            # Each difficulty has its own rules
+            # each difficulty has its own rules
             if self.difficulty == "beginner":
                 self.move_limit = 10
                 self.banned_words.clear()
@@ -71,11 +67,11 @@ class WordLadderGame:
                 self.banned_words.clear()
             elif self.difficulty == "challenge":
                 self.move_limit = 12
-                # Pick some longer words to ban
+                # pick some longer words to ban
                 word_list = list(self.word_graph.words)
                 self.banned_words = set(random.sample([w for w in word_list if len(w) > 4], 5))
             
-            # Try to start a new game with these settings
+            # try to start a new game with these settings
             if not self.start_new_game_for_difficulty():
                 print("Couldn't start a game with these settings")
                 return False
@@ -87,7 +83,7 @@ class WordLadderGame:
     def find_valid_word_pair(self, min_len: int, max_len: int, min_path: int, max_path: int) -> Optional[Tuple[str, str]]:
         """Find two words that make a good puzzle"""
         try:
-            # Get words that fit our criteria
+            # get words that fit our criteria
             word_list = [w for w in self.word_graph.words 
                         if min_len <= len(w) <= max_len 
                         and w not in self.banned_words]
@@ -95,12 +91,12 @@ class WordLadderGame:
             if not word_list:
                 return None
             
-            # Try different starting words
+            # try different starting words
             for _ in range(self.max_attempts):
                 start_word = random.choice(word_list)
                 potential_targets = []
                 
-                # Look for good target words
+                # look for good target words
                 for target in random.sample(word_list, min(50, len(word_list))):
                     if target != start_word:
                         path, _ = self.search.astar(start_word, target)
@@ -120,7 +116,7 @@ class WordLadderGame:
         
     def get_fallback_word_pair(self) -> Tuple[str, str]:
         """Get reliable word pairs when we can't find random ones"""
-        # Classic word pairs that usually work
+        # classic word pairs that usually work
         reliable_pairs = [
             ("cat", "dog"),   # Animals
             ("cold", "warm"), # Temperature
@@ -134,7 +130,7 @@ class WordLadderGame:
             ("poor", "rich")  # Wealth
         ]
         
-        # Try our reliable pairs first
+        # try our reliable pairs first
         for start, target in reliable_pairs:
             if (self.word_graph.word_exists(start) and 
                 self.word_graph.word_exists(target) and
@@ -144,7 +140,7 @@ class WordLadderGame:
                 if path:
                     return start, target
         
-        # Last resort: just pick any valid words
+        # last resort: just pick any valid words
         valid_words = [w for w in self.word_graph.words if w not in self.banned_words and len(w) >= 3]
         if len(valid_words) >= 2:
             return valid_words[0], valid_words[1]
@@ -155,7 +151,7 @@ class WordLadderGame:
         """Pick words appropriate for current difficulty"""
         word_pair = None
         
-        # Different difficulties need different word lengths and path lengths
+        # different difficulties need different word lengths and path lengths
         if self.difficulty == "beginner":
             word_pair = self.find_valid_word_pair(3, 4, 3, 5)  # Short words, short paths
         elif self.difficulty == "advanced":
@@ -163,7 +159,7 @@ class WordLadderGame:
         else:  # challenge
             word_pair = self.find_valid_word_pair(5, 7, 6, 10) # Long words, complex paths
         
-        # Fall back to reliable pairs if needed
+        # fall back to reliable pairs if needed
         if word_pair is None:
             return self.get_fallback_word_pair()
         return word_pair
@@ -171,7 +167,7 @@ class WordLadderGame:
     def start_new_game_for_difficulty(self) -> bool:
         """Start a new game with current difficulty settings"""
         try:
-            # Give it a few tries to find good words
+            # give it a few tries to find good words
             for attempt in range(3):
                 try:
                     start_word, target_word = self.get_word_pair_for_difficulty()
@@ -235,7 +231,7 @@ class WordLadderGame:
         try:
             current_index = self.best_path.index(self.current_word)
         except ValueError:
-            # We're off the best path, find a new one
+            # we are off the best path, find a new one
             algo_name = 'astar' if self.selected_algorithm == 'A*' else self.selected_algorithm.lower()
             new_path, costs = getattr(self.search, algo_name)(
                 self.current_word, self.target_word
@@ -250,7 +246,7 @@ class WordLadderGame:
             
         next_word = self.best_path[current_index + 1]
         
-        # Calculate costs for the hint
+        # calculate costs for the hint
         current_path = self.best_path[current_index:]
         g_cost = len(current_path) - 1
         h_cost = self.search.h_cost(self.current_word, self.target_word)
@@ -273,7 +269,7 @@ class WordLadderGame:
             
         algorithm_paths = self.get_algorithm_comparison()
         
-        # Save stats for each algorithm
+        # save stats for each algorithm
         self.algorithm_stats = {
             name: {
                 'path': info['path'],
@@ -283,11 +279,11 @@ class WordLadderGame:
             for name, info in algorithm_paths.items()
         }
         
-        # Use selected algorithm's path if available
+        # use selected algorithm's path if available
         if self.selected_algorithm in algorithm_paths:
             return algorithm_paths[self.selected_algorithm]['path']
         
-        # Otherwise use shortest available path
+        # otherwise use shortest available path
         valid_paths = [info['path'] for info in algorithm_paths.values()]
         return min(valid_paths, key=len) if valid_paths else None
         
@@ -304,12 +300,12 @@ class WordLadderGame:
             
         remaining_moves = self.move_limit - actual_moves
         
-        # Base score depends on how close to optimal solution
+        # base score depends on how close to optimal solution
         base_score = min(1000 * (optimal_moves / actual_moves), 1000)
         # Bonus for having moves left
         move_bonus = remaining_moves * 100
         
-        # Different difficulties get different multipliers
+        # different difficulties get different multipliers
         multipliers = {
             "beginner": 1.0,
             "advanced": 1.5,
@@ -324,16 +320,16 @@ class WordLadderGame:
             start_word = start_word.lower()
             target_word = target_word.lower()
             
-            # Make sure both words are valid
+            # make sure both words are valid
             if not (self.is_word_valid(start_word) and self.is_word_valid(target_word)):
                 return False
                 
-            # Make sure there's a path between the words
+            # make sure there's a path between the words
             path, _ = self.search.astar(start_word, target_word)
             if not path:
                 return False
                 
-            # Initialize game state
+            # initialize game state
             self.current_word = start_word
             self.target_word = target_word
             self.moves = [start_word]
