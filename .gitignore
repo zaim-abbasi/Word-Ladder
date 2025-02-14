@@ -1,2 +1,2 @@
-# put _pycache_ in .gitignore
-_pytest_cache/
+# put _pycache_ folder in .gitignore
+_pycache_/
