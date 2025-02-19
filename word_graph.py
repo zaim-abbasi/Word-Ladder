@@ -3,115 +3,113 @@ from collections import defaultdict
 
 class WordGraph:
     def __init__(self):
-        # store all valid words
-        self.words = set()
-        # store word connections like a tree
-        self.graph = defaultdict(set)
-        # keep track of parent words
-        self.parent = {}
+        # storing all valid words from dictionary
+        self.word_list = set()
+        # making connections between words
+        self.word_connections = defaultdict(set)
+        # remembering where each word came from
+        self.word_parents = {}
         
     def load_words(self, filename: str) -> None:
-        """load words from a file into our dictionary"""
         try:
+            # reading words from file and making them lowercase, simple stuff
             with open(filename, 'r') as file:
-                # read each word, make it lowercase, and add to set
-                self.words = {word.strip().lower() for word in file if word.strip()}
+                self.word_list = {word.strip().lower() for word in file if word.strip()}
         except FileNotFoundError:
             print(f"error: could not find file {filename}")
-            self.words = set()
+            self.word_list = set()
     
-    def find_neighbors(self, word: str) -> Set[str]:
-        """find all valid words that differ by one letter"""
-        neighbors = set()
-        # try changing each letter position
-        for i in range(len(word)):
-            # try each possible letter
-            for letter in 'abcdefghijklmnopqrstuvwxyz':
-                if letter != word[i]:
-                    # make new word by changing one letter
-                    new_word = word[:i] + letter + word[i+1:]
-                    # add if it's a valid word
-                    if new_word in self.words:
-                        neighbors.add(new_word)
-        return neighbors
+    def find_similar_words(self, word: str) -> Set[str]:
+        similar_words = set()
+        # trying to change each letter one by one
+        for position in range(len(word)):
+            # trying every possible letter
+            for new_letter in 'abcdefghijklmnopqrstuvwxyz':
+                # no point using same letter, right?
+                if new_letter != word[position]:
+                    # making new word by changing just one letter
+                    changed_word = word[:position] + new_letter + word[position+1:]
+                    # if it's a real word, add it to our list
+                    if changed_word in self.word_list:
+                        similar_words.add(changed_word)
+        return similar_words
     
-    def build_graph(self) -> None:
-        """build word connections in a tree-like structure"""
-        # clear old connections
-        self.graph.clear()
-        self.parent.clear()
+    def build_word_network(self) -> None:
+        # clearing old stuff first
+        self.word_connections.clear()
+        self.word_parents.clear()
         
-        # group words by length for better organization
-        words_by_length = defaultdict(set)  # changed from list to set
-        for word in self.words:
-            words_by_length[len(word)].add(word)
+        # grouping words by length to make life easier
+        length_groups = defaultdict(set)
+        for word in self.word_list:
+            length_groups[len(word)].add(word)
         
-        # build connections for each word length group
-        for length, words in words_by_length.items():
+        # connecting similar words together
+        for length, words in length_groups.items():
             for word in words:
-                # find neighbors but only connect to words we haven't seen
-                neighbors = self.find_neighbors(word)
-                for neighbor in neighbors:
-                    # only add connection if neighbor isn't connected yet
-                    if neighbor not in self.parent:
-                        self.graph[word].add(neighbor)
-                        self.parent[neighbor] = word
+                similar_words = self.find_similar_words(word)
+                for similar_word in similar_words:
+                    # only connect if word doesn't have parent already
+                    if similar_word not in self.word_parents:
+                        self.word_connections[word].add(similar_word)
+                        self.word_parents[similar_word] = word
+    
+    def get_connected_words(self, word: str) -> Set[str]:
+        connected_words = set()
+        
+        # getting words we can reach from here
+        if word in self.word_connections:
+            connected_words.update(self.word_connections[word])
+        
+        # getting word we came from
+        if word in self.word_parents:
+            connected_words.add(self.word_parents[word])
+        
+        return connected_words
     
     def get_neighbors(self, word: str) -> Set[str]:
-        """get all words connected to this word"""
-        neighbors = set()
-        
-        # get children (words we connect to)
-        if word in self.graph:
-            neighbors.update(self.graph[word])
-            
-        # get parent (word that connects to us)
-        if word in self.parent:
-            neighbors.add(self.parent[word])
-            
-        return neighbors
+        # getting all connected words for search algorithms
+        return self.get_connected_words(word)
     
-    def get_path_to_root(self, word: str) -> list[str]:
-        """get path from word back to its root word"""
+    def get_path_to_start(self, word: str) -> list[str]:
         path = [word]
-        current = word
+        current_word = word
         
-        # follow parent pointers back to root
-        while current in self.parent:
-            current = self.parent[current]
-            path.append(current)
-            
+        # following the breadcrumbs back home
+        while current_word in self.word_parents:
+            current_word = self.word_parents[current_word]
+            path.append(current_word)
+        
         return path
     
-    def get_transformation_tree(self, start: str, target: str) -> Set[str]:
-        """get all words that could be part of the transformation"""
-        # do a breadth-first search to find all possible words
-        visited = set()
-        queue = [start]
+    def find_possible_words(self, start: str, target: str) -> Set[str]:
+        visited_words = set()
+        words_to_check = [start]
         
-        while queue:
-            current = queue.pop(0)
-            if current not in visited:
-                visited.add(current)
-                # add all neighbors to queue
-                for neighbor in self.get_neighbors(current):
-                    if neighbor not in visited:
-                        queue.append(neighbor)
-                        
-        return visited
+        # checking each word and its friends
+        while words_to_check:
+            current_word = words_to_check.pop(0)
+            if current_word not in visited_words:
+                visited_words.add(current_word)
+                # adding connected words to check later
+                for connected_word in self.get_connected_words(current_word):
+                    if connected_word not in visited_words:
+                        words_to_check.append(connected_word)
+        
+        return visited_words
+    
+    def is_valid_word(self, word: str) -> bool:
+        # checking if word exists in dictionary
+        return word.lower() in self.word_list
     
     def word_exists(self, word: str) -> bool:
-        """check if a word is in our dictionary"""
-        return word in self.words
+        # alias for is_valid_word for compatibility
+        return self.is_valid_word(word)
     
-    def get_word_count(self) -> int:
-        """count how many words we have"""
-        return len(self.words)
+    def count_words(self) -> int:
+        return len(self.word_list)
     
-    def get_edge_count(self) -> int:
-        """count how many connections exist between words"""
-        # count parent connections
-        parent_count = len(self.parent)
-        # count direct connections
-        direct_count = sum(len(neighbors) for neighbors in self.graph.values())
-        return parent_count + direct_count
+    def count_connections(self) -> int:
+        parent_links = len(self.word_parents)
+        direct_links = sum(len(connections) for connections in self.word_connections.values())
+        return parent_links + direct_links
