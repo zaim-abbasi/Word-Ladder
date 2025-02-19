@@ -409,13 +409,13 @@ class WordLadderGame:
         return self.current_word == self.target_word
         
     def get_minimum_moves(self) -> int:
-        # kitne minimum moves chahiye
+        # minimum moves required to solve
         return len(self.best_path) - 1 if self.best_path else 0
         
     def get_current_moves(self) -> int:
-        # kitne moves ho gaye
+        # moves made so far
         return len(self.moves) - 1
         
     def get_remaining_moves(self) -> int:
-        # kitne moves baki hain
+        # moves left
         return self.move_limit - self.get_current_moves()
