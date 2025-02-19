@@ -26,7 +26,7 @@ class WordLadderGame:
         self.selected_algorithm = 'A*'
         
         # how much we try to find good word pairs
-        self.max_attempts = 50
+        self.max_attempts = 100  # Increased from 50 to 100
         
         # setting for different modes
         self.restricted_letters = set()  # for challenge mode
@@ -81,11 +81,12 @@ class WordLadderGame:
             elif self.difficulty == "challenge":
                 # hardcore mode
                 self.move_limit = 12
-                self.min_word_length = 5
-                self.max_word_length = 7
+                self.min_word_length = 4  # Reduced from 5 to 4
+                self.max_word_length = 6  # Reduced from 7 to 6
+                self.banned_words.clear()
                 
                 # finding good word pair first
-                word_pair = self.find_valid_word_pair(5, 7, 6, 10)
+                word_pair = self.find_valid_word_pair(4, 6, 5, 8)  # Adjusted parameters
                 if word_pair:
                     start_word, target_word = word_pair
                     # getting all possible words in between
@@ -95,10 +96,10 @@ class WordLadderGame:
                                    if w != start_word and w != target_word]
                     if ban_candidates:
                         self.banned_words = set(random.sample(ban_candidates, 
-                                                            min(5, len(ban_candidates))))
+                                                            min(3, len(ban_candidates))))  # Reduced from 5 to 3
                     
                 # blocking some letters
-                self.restricted_letters = set(random.sample('abcdefghijklmnopqrstuvwxyz', 3))
+                self.restricted_letters = set(random.sample('abcdefghijklmnopqrstuvwxyz', 2))  # Reduced from 3 to 2
             
             # trying to start game with new settings
             if not self.start_new_game_for_difficulty():
@@ -115,7 +116,8 @@ class WordLadderGame:
             # getting words that fit our rules
             word_list = [w for w in self.word_graph.word_list 
                         if min_len <= len(w) <= max_len 
-                        and w not in self.banned_words]
+                        and w not in self.banned_words
+                        and not any(letter in self.restricted_letters for letter in w)]
             
             if not word_list:
                 return None
@@ -126,7 +128,7 @@ class WordLadderGame:
                 potential_targets = []
                 
                 # looking for good target words
-                for target in random.sample(word_list, min(50, len(word_list))):
+                for target in random.sample(word_list, min(100, len(word_list))):  # Increased from 50 to 100
                     if target != start_word:
                         path, _ = self.search.astar(start_word, target)
                         if path and min_path <= len(path) <= max_path:
@@ -163,15 +165,21 @@ class WordLadderGame:
             if (self.word_graph.is_valid_word(start) and 
                 self.word_graph.is_valid_word(target) and
                 start not in self.banned_words and 
-                target not in self.banned_words):
+                target not in self.banned_words and
+                not any(letter in self.restricted_letters for letter in start) and
+                not any(letter in self.restricted_letters for letter in target)):
                 path, _ = self.search.astar(start, target)
                 if path:
                     return start, target
         
         # last option: koi bhi do words
-        valid_words = [w for w in self.word_graph.word_list if w not in self.banned_words and len(w) >= 3]
+        valid_words = [w for w in self.word_graph.word_list 
+                      if w not in self.banned_words 
+                      and len(w) >= self.min_word_length
+                      and len(w) <= self.max_word_length
+                      and not any(letter in self.restricted_letters for letter in w)]
         if len(valid_words) >= 2:
-            return valid_words[0], valid_words[1]
+            return random.choice(valid_words), random.choice(valid_words)
         
         raise ValueError("koi bhi working word pair nahi mila!")
         
@@ -184,7 +192,7 @@ class WordLadderGame:
         elif self.difficulty == "advanced":
             word_pair = self.find_valid_word_pair(4, 6, 5, 8)  # getting tougher
         else:  # challenge
-            word_pair = self.find_valid_word_pair(5, 7, 6, 10) # hardcore mode
+            word_pair = self.find_valid_word_pair(4, 6, 5, 8)  # Adjusted parameters
         
         # if pair not found, using fallback
         if word_pair is None:
